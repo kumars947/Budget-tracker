@@ -1,45 +1,143 @@
+import Card from './Card'
 
-import {
-  Cell,
-  Legend,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-} from "recharts";
+export default function ChartCard({ data }) {
+  const total = data.reduce(
+    (sum, item) => sum + item.amount,
+    0
+  )
 
-const categoryColors = ["#047857", "#0f766e", "#0369a1", "#b45309", "#be123c"];
+  if (!total) {
+    return (
+      <Card className="empty-card">
+        <div className="empty-icon">◔</div>
 
-const currency = new Intl.NumberFormat("en-IN", {
-  style: "currency",
-  currency: "INR",
-  maximumFractionDigits: 2,
-});
+        <h3>No expenses to chart yet</h3>
 
-export function ChartCard({ categoryData }) {
+        <p>
+          Add an expense above and your spending
+          breakdown will appear here.
+        </p>
+      </Card>
+    )
+  }
+
+  const colors = [
+    '#d9543d',
+    '#3f6f91',
+    '#d5a24b',
+    '#6d8f72',
+    '#8d6b9f',
+    '#5f777c'
+  ]
+
+  let start = 0
+  const radius = 46
+  const circumference = 2 * Math.PI * radius
+
+  const slices = data.map((item, index) => {
+    const length =
+      (item.amount / total) * circumference
+
+    const slice = {
+      ...item,
+      color: colors[index % colors.length],
+      dash: `${length} ${circumference - length}`,
+      offset: -start
+    }
+
+    start += length
+
+    return slice
+  })
+
   return (
-    <section className="min-h-[20rem] rounded-2xl border border-stone-200 bg-white p-5 shadow-sm sm:p-7">
-      <div className="mb-3">
-        <p className="text-lg font-bold">Spending by category</p>
-        <p className="mt-1 text-sm text-stone-500">Your expense breakdown at a glance.</p>
-      </div>
-      {categoryData.length === 0 ? (
-        <div className="flex min-h-56 items-center justify-center rounded-xl bg-stone-50 px-6 text-center text-sm text-stone-500">
-          No expenses to chart yet.
+    <Card className="chart-card">
+      <div className="section-head">
+        <div>
+          <p className="eyebrow">SPENDING</p>
+          <h2>Where your money goes</h2>
         </div>
-      ) : (
-        <ResponsiveContainer width="100%" height={280}>
-          <PieChart>
-            <Pie data={categoryData} dataKey="value" nameKey="name" innerRadius={58} outerRadius={92} paddingAngle={3}>
-              {categoryData.map((entry, index) => (
-                <Cell key={entry.name} fill={categoryColors[index % categoryColors.length]} />
-              ))}
-            </Pie>
-            <Tooltip formatter={(value) => currency.format(value)} />
-            <Legend wrapperStyle={{ fontSize: "12px" }} />
-          </PieChart>
-        </ResponsiveContainer>
-      )}
-    </section>
-  );
+
+        <span className="muted">
+          US${total.toFixed(2)}
+        </span>
+      </div>
+
+      <div className="chart-wrap">
+        <svg
+          viewBox="0 0 110 110"
+          className="donut"
+        >
+          <circle
+            cx="55"
+            cy="55"
+            r={radius}
+            fill="none"
+            stroke="#eeeae4"
+            strokeWidth="12"
+          />
+
+          <g transform="rotate(-90 55 55)">
+            {slices.map(item => (
+              <circle
+                key={item.category}
+                cx="55"
+                cy="55"
+                r={radius}
+                fill="none"
+                stroke={item.color}
+                strokeWidth="12"
+                strokeDasharray={item.dash}
+                strokeDashoffset={item.offset}
+              />
+            ))}
+          </g>
+
+          <text
+            x="55"
+            y="53"
+            textAnchor="middle"
+            className="donut-total"
+          >
+            ${total.toFixed(0)}
+          </text>
+
+          <text
+            x="55"
+            y="64"
+            textAnchor="middle"
+            className="donut-label"
+          >
+            spent
+          </text>
+        </svg>
+
+        <div className="legend">
+          {slices.map(item => (
+            <div
+              className="legend-row"
+              key={item.category}
+            >
+              <span
+                className="dot"
+                style={{
+                  background: item.color
+                }}
+              />
+
+              <span>{item.category}</span>
+
+              <b>
+                {(
+                  (item.amount / total) *
+                  100
+                ).toFixed(0)}
+                %
+              </b>
+            </div>
+          ))}
+        </div>
+      </div>
+    </Card>
+  )
 }
